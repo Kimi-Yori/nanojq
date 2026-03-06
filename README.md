@@ -27,8 +27,17 @@ nanojq is **5-10x faster** on small-to-medium JSON. For large files (1 MB+), jq'
 
 ## Install
 
+**Pre-built binary** (Linux x86_64):
+
 ```bash
-# Build from source (requires musl-gcc for minimal static binary)
+curl -L -o nanojq https://github.com/Kimi-Yori/nanojq/releases/latest/download/nanojq
+chmod +x nanojq
+sudo mv nanojq /usr/local/bin/
+```
+
+**Build from source** (requires musl-gcc for minimal static binary):
+
+```bash
 git clone https://github.com/Kimi-Yori/nanojq.git
 cd nanojq
 make              # → 22 KB static binary
