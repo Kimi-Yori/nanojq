@@ -1,0 +1,7 @@
+# Build artifacts
+nanojq
+nanojq-dynamic
+nanojq-debug
+
+# Backup files
+*.bak
