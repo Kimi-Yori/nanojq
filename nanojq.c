@@ -43,7 +43,8 @@ static void *portable_mremap(void *old, size_t old_size, size_t new_size) {
     void *p = mmap(NULL, new_size, PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (p == MAP_FAILED) return MAP_FAILED;
-    memcpy(p, old, old_size);
+    size_t copy_size = old_size < new_size ? old_size : new_size;
+    memcpy(p, old, copy_size);
     munmap(old, old_size);
     return p;
 }
@@ -465,7 +466,7 @@ static char *read_file(const char *path, size_t *len) {
         return NULL;
     }
     int mflags = MAP_PRIVATE;
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(MAP_NOCACHE)
     if (st.st_size > (1 << 20))  /* > 1 MB: skip buffer cache */
         mflags |= MAP_NOCACHE;
 #endif

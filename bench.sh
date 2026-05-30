@@ -160,14 +160,14 @@ echo ""
 echo "--- Peak RSS (1MB file) ---"
 if [[ "$(uname -s)" == "Darwin" ]]; then
     echo -n "nanojq: "
-    /usr/bin/time -l "$NJQ" '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "maximum resident"
+    /usr/bin/time -l "$NJQ" '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "maximum resident" || true
     echo -n "jq:     "
-    /usr/bin/time -l "$JQ" -r '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "maximum resident"
+    /usr/bin/time -l "$JQ" -r '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "maximum resident" || true
 else
     echo -n "nanojq: "
-    /usr/bin/time -v "$NJQ" '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident"
+    /usr/bin/time -v "$NJQ" '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident" || true
     echo -n "jq:     "
-    /usr/bin/time -v "$JQ" -r '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident"
+    /usr/bin/time -v "$JQ" -r '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident" || true
 fi
 
 echo ""
