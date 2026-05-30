@@ -5,6 +5,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -x "$SCRIPT_DIR/nanojq" ]; then
     NJQ="$SCRIPT_DIR/nanojq"
+elif [ -x "$SCRIPT_DIR/nanojq-apple" ]; then
+    NJQ="$SCRIPT_DIR/nanojq-apple"
 elif [ -x "$SCRIPT_DIR/nanojq-dynamic" ]; then
     NJQ="$SCRIPT_DIR/nanojq-dynamic"
 else

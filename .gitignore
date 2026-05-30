@@ -1,7 +1,9 @@
 # Build artifacts
 nanojq
+nanojq-apple
 nanojq-dynamic
 nanojq-debug
+nanojq-graviton
 
 # Backup files
 *.bak

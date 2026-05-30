@@ -5,6 +5,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -x "$SCRIPT_DIR/nanojq" ]; then
     NJQ="$SCRIPT_DIR/nanojq"
+elif [ -x "$SCRIPT_DIR/nanojq-apple" ]; then
+    NJQ="$SCRIPT_DIR/nanojq-apple"
 elif [ -x "$SCRIPT_DIR/nanojq-dynamic" ]; then
     NJQ="$SCRIPT_DIR/nanojq-dynamic"
 else
@@ -20,12 +22,12 @@ if [ -z "$NJQ" ] || [ ! -x "$NJQ" ]; then
 fi
 
 if [ -z "$JQ" ]; then
-    echo "error: jq not found. install with: sudo apt install jq" >&2
+    echo "error: jq not found. install with: apt install jq / brew install jq" >&2
     exit 1
 fi
 
 if ! command -v hyperfine &>/dev/null; then
-    echo "error: hyperfine not found. install with: sudo apt install hyperfine" >&2
+    echo "error: hyperfine not found. install with: apt install hyperfine / brew install hyperfine" >&2
     exit 1
 fi
 
@@ -156,10 +158,17 @@ ls -lh "$NJQ" "$JQ" | awk '{print $5, $NF}'
 echo ""
 
 echo "--- Peak RSS (1MB file) ---"
-echo -n "nanojq: "
-/usr/bin/time -v "$NJQ" '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident"
-echo -n "jq:     "
-/usr/bin/time -v "$JQ" -r '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo -n "nanojq: "
+    /usr/bin/time -l "$NJQ" '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "maximum resident" || true
+    echo -n "jq:     "
+    /usr/bin/time -l "$JQ" -r '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "maximum resident" || true
+else
+    echo -n "nanojq: "
+    /usr/bin/time -v "$NJQ" '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident" || true
+    echo -n "jq:     "
+    /usr/bin/time -v "$JQ" -r '.count' "$TMPDIR/1mb.json" 2>&1 >/dev/null | grep "Maximum resident" || true
+fi
 
 echo ""
 echo "=== benchmark complete ==="

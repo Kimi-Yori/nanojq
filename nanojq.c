@@ -13,7 +13,9 @@
  *   2 = error (invalid JSON, invalid query, I/O)
  */
 
+#ifdef __linux__
 #define _GNU_SOURCE  /* mremap */
+#endif
 
 #define JSMN_STATIC
 #define JSMN_STRICT
@@ -26,8 +28,27 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-/* No stdio.h — all output via write(2) to avoid pulling in printf/fmt_fp (~10KB).
- * No stdlib.h — mmap/mremap replaces malloc/realloc (~7KB), manual int parse. */
+/* No stdio.h — all output via write(2) to keep the binary minimal.
+ * No stdlib.h — mmap-based allocation avoids malloc/realloc; manual int parse. */
+
+/* ---------------- platform compatibility ---------------- */
+
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON  /* some BSDs only define MAP_ANON */
+#endif
+
+#ifndef MREMAP_MAYMOVE
+/* macOS/BSD lack mremap — emulate with mmap + memcpy + munmap. */
+static void *portable_mremap(void *old, size_t old_size, size_t new_size) {
+    void *p = mmap(NULL, new_size, PROT_READ | PROT_WRITE,
+                   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED) return MAP_FAILED;
+    size_t copy_size = old_size < new_size ? old_size : new_size;
+    memcpy(p, old, copy_size);
+    munmap(old, old_size);
+    return p;
+}
+#endif
 
 /* ---------------- constants ---------------- */
 
@@ -62,7 +83,7 @@ static void wrs(int fd, const char *s) {
 }
 
 /* buffered stdout */
-static char outbuf[4096];
+static char outbuf[16384];
 static int outpos;
 
 static void out_flush(void) {
@@ -412,7 +433,11 @@ static char *read_stdin(size_t *len) {
             }
             size_t newcap = cap * 2;
             if (newcap > (size_t)READ_BUF_MAX) newcap = READ_BUF_MAX;
+#ifdef MREMAP_MAYMOVE
             char *tmp = mremap(buf, cap, newcap, MREMAP_MAYMOVE);
+#else
+            char *tmp = portable_mremap(buf, cap, newcap);
+#endif
             if (tmp == MAP_FAILED) { munmap(buf, cap); return NULL; }
             buf = tmp;
             cap = newcap;
@@ -440,12 +465,20 @@ static char *read_file(const char *path, size_t *len) {
         errmsg2(path, "file too large");
         return NULL;
     }
-    char *buf = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    int mflags = MAP_PRIVATE;
+#if defined(__APPLE__) && defined(MAP_NOCACHE)
+    if (st.st_size > (1 << 20))  /* > 1 MB: skip buffer cache */
+        mflags |= MAP_NOCACHE;
+#endif
+    char *buf = mmap(NULL, st.st_size, PROT_READ, mflags, fd, 0);
     close(fd);
     if (buf == MAP_FAILED) {
         errmsg2(path, "mmap failed");
         return NULL;
     }
+#ifdef MADV_SEQUENTIAL
+    (void)madvise(buf, st.st_size, MADV_SEQUENTIAL);  /* hint: single forward scan */
+#endif
     *len = st.st_size;
     return buf;
 }

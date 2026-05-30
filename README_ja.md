@@ -35,17 +35,20 @@ chmod +x nanojq
 sudo mv nanojq /usr/local/bin/
 ```
 
-**ソースからビルド**（最小staticバイナリにはmusl-gccが必要）：
+**ソースからビルド**：
 
 ```bash
 git clone https://github.com/Kimi-Yori/nanojq.git
 cd nanojq
-make              # → 22 KB staticバイナリ
+make              # プラットフォーム自動検出（Linux → musl static、macOS → clang stripped）
 
-# システムccでも可（バイナリは大きくなるが動作は高速）
-make dynamic      # → nanojq-dynamic
+# プラットフォーム別ターゲット
+make release      # Linux staticバイナリ（musl-gcc必要、22 KB）
+make apple        # macOS最適化バイナリ（33 KB、strip済み）
+make graviton     # Linux ARM64 static（aarch64-linux-gnu-gcc必要）
+make dynamic      # システムccでdynamicリリース
 
-# テストとインストール（どちらのバイナリでもOK）
+# テストとインストール（どのバイナリでもOK）
 make test
 sudo make install
 ```
@@ -141,7 +144,10 @@ stdin/file → [Read] → [Tokenize] → [Walk] → [Output]
 ## ビルドターゲット
 
 ```bash
-make              # staticリリース（musl-gcc、22 KB）
+make              # 自動検出: Linux → release、macOS → apple
+make release      # Linux static（musl-gcc、22 KB）
+make apple        # macOS最適化（clang、strip済み、33 KB）
+make graviton     # Linux ARM64 static（aarch64-linux-gnu-gcc）
 make dynamic      # dynamicリリース（システムcc）
 make debug        # デバッグビルド（シンボル付き）
 make test         # テストスイート実行（48テスト）
